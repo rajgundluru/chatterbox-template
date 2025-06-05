@@ -1,0 +1,7 @@
+{
+    "name": "Chatterbox",
+    "description": "A template for Chatterbox text to speech application",
+    "icon": "https://www.gstatic.com/images/branding/productlogos/studio/v1/192px.svg",
+    "params": [
+    ]
+}
