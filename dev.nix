@@ -6,14 +6,9 @@
   # Use https://search.nixos.org/packages to find packages
   packages = [
     pkgs.python3
-    pkgs.git
-    pkgs.python3Packages.pip
-    pkgs.python3Packages.virtualenv
   ];
   # Sets environment variables in the workspace
-  env = {
-    PYTHONPATH = ".";
-  };
+  env = {};
   idx = {
     # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
@@ -33,38 +28,12 @@
     previews = {
       enable = true;
       previews = {
-        web = {
-          command = [ "python" "main.py" ];
+       web = {
+          command = [ "./devserver.sh" ];
           env = { PORT = "$PORT"; };
           manager = "web";
         };
       };
     };
   };
-  # Bootstrap script that runs when the template is first created
-  bootstrap = ''
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # Create the output directory
-    mkdir -p "$out"
-
-    # Clone the repository
-    git clone https://github.com/rajgundluru/chatterbox-template.git "$out"
-    
-    # Create .idx directory and copy dev.nix
-    mkdir -p "$out/.idx"
-    cp ${./dev.nix} "$out/.idx/dev.nix"
-    install --mode u+rw ${./dev.nix} "$out/.idx/dev.nix"
-    
-    # Set up Python environment
-    cd "$out"
-    python -m venv .venv
-    source .venv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt
-    
-    # Make all files writable
-    chmod -R u+w "$out"
-  '';
 }
