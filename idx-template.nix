@@ -42,8 +42,19 @@
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # Clone the repository
-    git clone https://github.com/rajgundluru/chatterbox-template.git .
+    # Create a temporary directory
+    TEMP_DIR=$(mktemp -d)
+    
+    # Clone the repository into the temporary directory
+    git clone https://github.com/rajgundluru/chatterbox-template.git "$TEMP_DIR"
+    
+    # Move all files from the temporary directory to the current directory
+    # Excluding .git directory
+    cp -r "$TEMP_DIR"/* .
+    cp -r "$TEMP_DIR"/.[!.]* . 2>/dev/null || true
+    
+    # Clean up the temporary directory
+    rm -rf "$TEMP_DIR"
     
     # Create virtual environment and install dependencies
     python -m venv .venv
