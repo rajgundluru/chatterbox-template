@@ -48,22 +48,23 @@
     # Clone the repository into the temporary directory
     git clone https://github.com/rajgundluru/chatterbox-template.git "$TEMP_DIR"
     
-    # Move all files from the temporary directory to the current directory
+    # Copy all files from the temporary directory to the output directory
     # Excluding .git directory
-    cp -r "$TEMP_DIR"/* .
-    cp -r "$TEMP_DIR"/.[!.]* . 2>/dev/null || true
+    cp -r "$TEMP_DIR"/* "$out/"
+    cp -r "$TEMP_DIR"/.[!.]* "$out/" 2>/dev/null || true
     
     # Clean up the temporary directory
     rm -rf "$TEMP_DIR"
     
     # Create virtual environment and install dependencies
+    cd "$out"
     python -m venv .venv
     source .venv/bin/activate
     pip install -r requirements.txt
 
     # Create .idx directory and dev.nix file
-    mkdir -p .idx
-    cat > .idx/dev.nix << 'EOF'
+    mkdir -p "$out/.idx"
+    cat > "$out/.idx/dev.nix" << 'EOF'
     { pkgs }: {
       packages = [ pkgs.python3 ];
       idx = {
@@ -79,7 +80,7 @@
           previews = {
             web = {
               command = [ "python" "main.py" ];
-              env = { PORT = "$PORT"; };
+              env = { PORT = "$PORT" };
               manager = "web";
             };
           };
