@@ -42,6 +42,9 @@
     #!/usr/bin/env bash
     set -euo pipefail
 
+    # Create the output directory
+    mkdir -p "$out"
+
     # Create a temporary directory
     TEMP_DIR=$(mktemp -d)
     
