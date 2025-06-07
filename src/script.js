@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reference Audio Controls & Display
     const playPauseBtn = document.getElementById('ref-audio-play-pause');
     const timeDisplay = document.getElementById('ref-audio-time');
-    const recordBtn = document.getElementById('record-btn');
 
     // Sliders
     const exaggerationSlider = document.getElementById('exaggeration-slider');
@@ -23,8 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let referenceAudioFile = null;
     let wavesurfer = null;
-    let mediaRecorder = null;
-    let audioChunks = [];
 
     // --- Helper Functions ---
     // Converts a Base64 Data URL to a File object
@@ -116,34 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ref-audio-backward').addEventListener('click', () => wavesurfer && wavesurfer.skipBackward(5));
     document.getElementById('ref-audio-forward').addEventListener('click', () => wavesurfer && wavesurfer.skipForward(5));
     document.getElementById('ref-audio-reset').addEventListener('click', () => wavesurfer && wavesurfer.seekTo(0));
-
-    // Recording logic
-    recordBtn.addEventListener('click', async () => {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-            recordBtn.textContent = '🎤 Record';
-            recordBtn.classList.remove('recording');
-        } else {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    const recordedFile = new File([audioBlob], "recorded_audio.wav", { type: "audio/wav" });
-                    loadAndStoreReferenceAudio(recordedFile);
-                    stream.getTracks().forEach(track => track.stop());
-                };
-                mediaRecorder.start();
-                recordBtn.textContent = '🛑 Stop';
-                recordBtn.classList.add('recording');
-            } catch (error) {
-                console.error('Error accessing microphone:', error);
-                alert('Could not access microphone.');
-            }
-        }
-    });
 
     // --- Main Generate Button Logic ---
     generateBtn.addEventListener('click', async () => {

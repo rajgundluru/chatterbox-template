@@ -55,7 +55,6 @@
                 </div>
                 <div class="audio-upload-record">
                     <button class="upload-btn">⬆️ Upload</button>
-                    <button class="record-btn" id="record-btn">🎤 Record</button>
                 </div>
             </div>
 
@@ -67,25 +66,25 @@
                 </div>
                 <div class="options-sliders">
                     <div class="slider-container">
-                        <label for="exaggeration-slider">Exaggeration</label>
+                        <label for="exaggeration-slider">Exaggeration (Neutral = 0.5, extreme values can be unstable)</label>
                         <div class="slider-group">
-                            <input type="range" id="exaggeration-slider" min="0" max="2" step="0.01" value="1.0">
-                            <span class="slider-value">1.00</span>
+                            <input type="range" id="exaggeration-slider" min="0.25" max="2" step="0.01" value="0.5">
+                            <span class="slider-value">0.50</span>
                             <button class="reset-slider control-btn" title="Reset">↻</button>
                         </div>
                     </div>
                     <div class="slider-container">
                         <label for="temperature-slider">Temperature</label>
                         <div class="slider-group">
-                            <input type="range" id="temperature-slider" min="0" max="1" step="0.01" value="0.75">
-                            <span class="slider-value">0.75</span>
+                            <input type="range" id="temperature-slider" min="0.05" max="5" step="0.01" value="0.8">
+                            <span class="slider-value">0.8</span>
                             <button class="reset-slider control-btn" title="Reset">↻</button>
                         </div>
                     </div>
                     <div class="slider-container">
-                        <label for="cfg-slider">Style Strength (CFG)</label>
+                        <label for="cfg-slider">CFG/Pace</label>
                         <div class="slider-group">
-                            <input type="range" id="cfg-slider" min="0" max="1" step="0.01" value="0.50">
+                            <input type="range" id="cfg-slider" min="0.2" max="1" step="0.01" value="0.50">
                             <span class="slider-value">0.50</span>
                             <button class="reset-slider control-btn" title="Reset">↻</button>
                         </div>
