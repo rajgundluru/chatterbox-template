@@ -56,6 +56,7 @@
     mkdir -p "$out/.idx"
     cp ${./dev.nix} "$out/.idx/dev.nix"
     install --mode u+rw ${./dev.nix} "$out/.idx/dev.nix"
+    install --mode u+rwx ${./devserver.sh} "$out/devserver.sh"
     
     # Set up Python environment
     cd "$out"
