@@ -3,15 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text to Speech</title>
+    <title>Chatterbox Pro TTS</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/wavesurfer.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Text to Speech Converter</h1>
-        <textarea id="text-input" placeholder="Enter text to convert to speech..."></textarea>
-        <button id="generate-btn">Generate Audio</button>
-        <audio id="audio-player" controls></audio>
+        <header class="header">
+            <h1>Chatterbox Pro TTS</h1>
+            <p>Experience high-quality, AI-powered text-to-speech synthesis. Customize voice characteristics with intuitive controls and reference audio styling.</p>
+        </header>
+
+        <div class="layout-grid">
+            <!-- Text Input Card -->
+            <div class="card" id="text-input-card">
+                <label for="text-to-synthesize">Text To Synthesize</label>
+                <textarea id="text-to-synthesize" maxlength="300" placeholder="Enter your text here..."></textarea>
+            </div>
+
+            <!-- Output Audio Card -->
+            <div class="card" id="output-audio-card">
+                <div class="card-header">
+                    <span class="icon">🔊</span>
+                    <span>Output Audio</span>
+                </div>
+                <div class="output-audio-placeholder">
+                    <span>Generated audio will appear here</span>
+                </div>
+            </div>
+
+            <!-- Reference Audio Card -->
+            <div class="card" id="reference-audio-card">
+                <div class="card-header">
+                    <div>
+                        <span class="icon">🎵</span>
+                        <span>Reference Audio (Optional)</span>
+                    </div>
+                    <button class="close-btn" title="Clear reference audio">×</button>
+                </div>
+                <div id="waveform" class="audio-waveform-placeholder">
+                    <span>Upload or record audio to see waveform</span>
+                </div>
+                <div class="audio-controls">
+                    <span id="ref-audio-time" class="audio-time">0:00</span>
+                    <div class="playback-buttons">
+                        <button id="ref-audio-backward" class="control-btn" title="Seek Backward 5s">⏪</button>
+                        <button id="ref-audio-play-pause" class="control-btn play-pause" title="Play/Pause">▶</button>
+                        <button id="ref-audio-forward" class="control-btn" title="Seek Forward 5s">⏩</button>
+                    </div>
+                    <button id="ref-audio-reset" class="reset-audio" title="Restart">↻</button>
+                </div>
+                <div class="audio-upload-record">
+                    <button class="upload-btn">⬆️ Upload</button>
+                    <button class="record-btn" id="record-btn">🎤 Record</button>
+                </div>
+            </div>
+
+            <!-- Options Card -->
+            <div class="card" id="options-card">
+                <div class="card-header">
+                    <span class="icon">⚙️</span>
+                    <span>Generation Options</span>
+                </div>
+                <div class="options-sliders">
+                    <div class="slider-container">
+                        <label for="exaggeration-slider">Exaggeration</label>
+                        <div class="slider-group">
+                            <input type="range" id="exaggeration-slider" min="0" max="2" step="0.01" value="1.0">
+                            <span class="slider-value">1.00</span>
+                            <button class="reset-slider control-btn" title="Reset">↻</button>
+                        </div>
+                    </div>
+                    <div class="slider-container">
+                        <label for="temperature-slider">Temperature</label>
+                        <div class="slider-group">
+                            <input type="range" id="temperature-slider" min="0" max="1" step="0.01" value="0.75">
+                            <span class="slider-value">0.75</span>
+                            <button class="reset-slider control-btn" title="Reset">↻</button>
+                        </div>
+                    </div>
+                    <div class="slider-container">
+                        <label for="cfg-slider">Style Strength (CFG)</label>
+                        <div class="slider-group">
+                            <input type="range" id="cfg-slider" min="0" max="1" step="0.01" value="0.50">
+                            <span class="slider-value">0.50</span>
+                            <button class="reset-slider control-btn" title="Reset">↻</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="generate-btn">Generate</button>
     </div>
     <script src="script.js"></script>
 </body>

@@ -1,84 +1,208 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const textInput = document.getElementById('text-input');
-    const convertBtn = document.getElementById('generate-btn');
-    const audioPlayer = document.getElementById('audio-player'); // Corrected ID
+    // --- DOM Element Selection ---
+    const textInput = document.getElementById('text-to-synthesize');
+    const generateBtn = document.querySelector('.generate-btn');
+    const outputAudioPlaceholder = document.querySelector('.output-audio-placeholder');
+    
+    // Reference Audio Elements
+    const referenceAudioCard = document.getElementById('reference-audio-card');
+    const uploadBtn = referenceAudioCard.querySelector('.upload-btn');
+    const closeReferenceAudioBtn = referenceAudioCard.querySelector('.close-btn');
+    const waveformContainer = document.getElementById('waveform');
+    const waveformText = waveformContainer.querySelector('span');
 
-    // Early check for elements and log if not found
-    if (!textInput) {
-        console.error("CRITICAL: textInput element with ID 'text-input' not found on DOMContentLoaded.");
-    }
-    if (!convertBtn) {
-        console.error("CRITICAL: convertBtn element with ID 'generate-btn' not found on DOMContentLoaded.");
-        return; // If button isn't found, no point in proceeding
-    }
-    if (!audioPlayer) {
-        console.error("CRITICAL: audioPlayer element with ID 'audio-player' not found on DOMContentLoaded.");
-    }
+    // Reference Audio Controls & Display
+    const playPauseBtn = document.getElementById('ref-audio-play-pause');
+    const timeDisplay = document.getElementById('ref-audio-time');
+    const recordBtn = document.getElementById('record-btn');
 
-    convertBtn.addEventListener('click', async () => {
-        if (!textInput) {
-            alert('Error: The text input field was not found in the document. Cannot get text.');
-            console.error("Error in click handler: textInput is null.");
-            return;
+    // Sliders
+    const exaggerationSlider = document.getElementById('exaggeration-slider');
+    const temperatureSlider = document.getElementById('temperature-slider');
+    const cfgSlider = document.getElementById('cfg-slider');
+
+    let referenceAudioFile = null;
+    let wavesurfer = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+
+    // --- Helper Functions ---
+    // Converts a Base64 Data URL to a File object
+    const dataURLtoFile = (dataurl, filename) => {
+        const arr = dataurl.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
         }
-        const text = textInput.value.trim();
-        
-        if (!text) {
-            alert('Please enter some text to convert to speech.');
-            return;
+        return new File([u8arr], filename, { type: mime });
+    };
+
+    // --- WaveSurfer & Audio State Management ---
+    const initializeWaveSurfer = () => {
+        if (wavesurfer) wavesurfer.destroy();
+        wavesurfer = WaveSurfer.create({
+            container: waveformContainer,
+            waveColor: '#a1a1aa',
+            progressColor: '#6a5af9',
+            height: 80,
+            barWidth: 2,
+            responsive: true,
+        });
+
+        wavesurfer.on('play', () => playPauseBtn.textContent = '⏸');
+        wavesurfer.on('pause', () => playPauseBtn.textContent = '▶');
+        wavesurfer.on('audioprocess', () => {
+            timeDisplay.textContent = new Date(wavesurfer.getCurrentTime() * 1000).toISOString().substr(14, 5);
+        });
+    };
+
+    // Loads audio into the player and stores it in the session
+    const loadAndStoreReferenceAudio = (file) => {
+        referenceAudioFile = file;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            sessionStorage.setItem('referenceAudioData', e.target.result);
+            sessionStorage.setItem('referenceAudioName', file.name);
+            initializeWaveSurfer();
+            wavesurfer.load(e.target.result);
+            waveformText.textContent = ''; // Clear placeholder text
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Clears the reference audio from the player and session
+    const clearReferenceAudio = () => {
+        referenceAudioFile = null;
+        sessionStorage.removeItem('referenceAudioData');
+        sessionStorage.removeItem('referenceAudioName');
+        if (wavesurfer) wavesurfer.empty();
+        timeDisplay.textContent = '0:00';
+        playPauseBtn.textContent = '▶';
+        waveformText.textContent = 'Upload or record audio to see waveform';
+        console.log('Reference audio cleared.');
+    };
+
+    // Check session storage on page load
+    const loadFromSession = () => {
+        const audioData = sessionStorage.getItem('referenceAudioData');
+        const audioName = sessionStorage.getItem('referenceAudioName');
+        if (audioData && audioName) {
+            referenceAudioFile = dataURLtoFile(audioData, audioName);
+            initializeWaveSurfer();
+            wavesurfer.load(audioData);
+            waveformText.textContent = '';
+            console.log(`Loaded reference audio "${audioName}" from session.`);
+        } else {
+            initializeWaveSurfer(); // Init empty player
         }
+    };
 
-        const originalButtonText = convertBtn.textContent; // Store original button text from HTML/previous state
-        convertBtn.disabled = true;
-        convertBtn.textContent = 'Converting...';
+    // --- Event Listeners ---
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'audio/wav, audio/mpeg';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
 
-        try {
-            const response = await fetch('/generate_audio', { // Corrected URL
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ text }),
-            });
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => e.target.files[0] && loadAndStoreReferenceAudio(e.target.files[0]));
+    closeReferenceAudioBtn.addEventListener('click', clearReferenceAudio);
 
-            if (!response.ok) {
-                let errorMsg = 'Failed to convert text to speech';
-                try {
-                    // Try to get more specific error from server response
-                    const errorData = await response.json(); 
-                    if (errorData && errorData.error) {
-                        errorMsg += `: ${errorData.error}`;
-                    } else {
-                        errorMsg += `: Server error ${response.status} ${response.statusText}`;
-                    }
-                } catch (e) {
-                    // Fallback if response is not JSON or error structure is different
-                    errorMsg += `: Server error ${response.status} ${response.statusText}`;
-                }
-                throw new Error(errorMsg);
+    // Playback controls
+    playPauseBtn.addEventListener('click', () => wavesurfer && wavesurfer.playPause());
+    document.getElementById('ref-audio-backward').addEventListener('click', () => wavesurfer && wavesurfer.skipBackward(5));
+    document.getElementById('ref-audio-forward').addEventListener('click', () => wavesurfer && wavesurfer.skipForward(5));
+    document.getElementById('ref-audio-reset').addEventListener('click', () => wavesurfer && wavesurfer.seekTo(0));
+
+    // Recording logic
+    recordBtn.addEventListener('click', async () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            recordBtn.textContent = '🎤 Record';
+            recordBtn.classList.remove('recording');
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const recordedFile = new File([audioBlob], "recorded_audio.wav", { type: "audio/wav" });
+                    loadAndStoreReferenceAudio(recordedFile);
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                mediaRecorder.start();
+                recordBtn.textContent = '🛑 Stop';
+                recordBtn.classList.add('recording');
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                alert('Could not access microphone.');
             }
-
-            const data = await response.json(); // Parse the JSON response
-            const audioFilePath = data.audio_file_path; // Get the file path
-
-            if (!audioFilePath) {
-                throw new Error("Server did not return an audio file path.");
-            }
-            
-            if (!audioPlayer) {
-                alert('Error: The audio player element was not found. Cannot play audio.');
-                console.error("Error in click handler: audioPlayer is null.");
-                return;
-            }
-            audioPlayer.src = audioFilePath; // Set the src to the path from the server
-            audioPlayer.style.display = 'block';
-            audioPlayer.play();
-        } catch (error) {
-            console.error('Error during conversion process:', error);
-            alert(error.message || 'An unexpected error occurred. Check console for details.');
-        } finally {
-            convertBtn.disabled = false;
-            convertBtn.textContent = originalButtonText; // Restore original button text
         }
     });
+
+    // --- Main Generate Button Logic ---
+    generateBtn.addEventListener('click', async () => {
+        const textToSynthesize = textInput.value.trim();
+        if (!textToSynthesize) {
+            alert('Please enter some text to synthesize.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('text', textToSynthesize);
+        formData.append('exaggeration', parseFloat(exaggerationSlider.value));
+        formData.append('temperature', parseFloat(temperatureSlider.value));
+        formData.append('cfg_weight', parseFloat(cfgSlider.value));
+
+        if (referenceAudioFile) {
+            formData.append('audio_prompt', referenceAudioFile);
+        }
+
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Generating...';
+        outputAudioPlaceholder.innerHTML = '<p>Generating audio...</p>';
+
+        try {
+            const response = await fetch('/generate_audio', { method: 'POST', body: formData });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || `Server error ${response.status}`);
+            
+            if (data.audio_file_path) {
+                const audioSrc = `${data.audio_file_path}?t=${new Date().getTime()}`;
+                outputAudioPlaceholder.innerHTML = `<audio controls autoplay><source src="${audioSrc}" type="audio/wav"></audio>`;
+            } else {
+                throw new Error('Server did not return an audio file path.');
+            }
+        } catch (error) {
+            outputAudioPlaceholder.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.textContent = 'Generate';
+        }
+    });
+
+    // --- Slider Setup ---
+    document.querySelectorAll('.slider-container').forEach(container => {
+        const slider = container.querySelector('input[type="range"]');
+        const valueDisplay = container.querySelector('.slider-value');
+        const resetButton = container.querySelector('.reset-slider');
+        const defaultValue = slider.value;
+        const precision = (slider.step.split('.')[1] || []).length;
+
+        const updateValue = () => valueDisplay.textContent = parseFloat(slider.value).toFixed(precision);
+        slider.addEventListener('input', updateValue);
+        resetButton.addEventListener('click', () => {
+            slider.value = defaultValue;
+            updateValue();
+        });
+        updateValue();
+    });
+    
+    // --- Initial Load ---
+    loadFromSession();
 });
